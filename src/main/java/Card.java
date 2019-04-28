@@ -1,16 +1,18 @@
 package main.java;
 
-public class Card{
+public class Card {
 
-    public int type; //[0:Hazak] [1:Mahkma]
+    public int type; //[0:Luck] [1:Trial]
     public String msg;
+    public int playerGain;
+    public int playerPos;
+    public int others;
 
-    Card(int type, String msg){
+    Card(int type, String msg, int playerGain, int playerPos, int others) {
         this.type = type;
         this.msg = msg;
-    }
-
-    public void execute() {
-        System.out.print(msg + "\n");
+        this.playerGain = playerGain;
+        this.playerPos = playerPos;
+        this.others = others;
     }
 }
