@@ -93,7 +93,7 @@ public class MainFlow {
                 }
                
                 System.out.println("Not my turn, is actually the turn of player "+ (int)curr_turn);
-                Object rcv =net_mang.rcv_Object(6*1000); 
+                Object rcv =net_mang.rcv_Object(20*1000); 
                 System.out.println((String)rcv);
 
             }
