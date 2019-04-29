@@ -38,7 +38,7 @@ public class GameBoard {
             for (int i=0; i<players.size() ; i++){
                 System.out.println("player id#" + i);
                 Player currentPlayer = players.get(i);
-                disc = throwDisc();
+                disc = throwDisc(); 
                 if(currentPlayer.Prison){
                     currentPlayer.Prison = false;
                     continue;
@@ -83,11 +83,10 @@ public class GameBoard {
                 }
                 System.out.println("player # " + i + ": current account = " + currentPlayer.account +"\n");
             }
-//            loopIndex ++;
         }
     }
 
-    private  static  void freeCity(Player player, City city)throws IOException {
+    private  static  void freeCity(Player player, City city) throws IOException {
         BufferedReader br = new BufferedReader(new InputStreamReader(System.in));
         city.printCityInfo();//print the whole city card
         System.out.print("Do you want to buy this city?? No, Yes");
@@ -238,58 +237,58 @@ public class GameBoard {
         luckCards = new Card[NUM_CARDS];
         trialCards = new Card[NUM_CARDS];
 
-        luckCards[0] = new Card(0,"انت كثير الهزار, ادفع 100 جنيه لما سببنه بهزارك", -100, 0, 0);
-        luckCards[1] = new Card(0,"انت وطني مخلص, ربحت جائزة كيف تخدم أمتك, خذ 50 جنيه", 50, 0, 0);
-        luckCards[2] = new Card(0,"حظك من السماء, رزقت بطفل جميا خذ 50 جنيه من كل لاعب بدل هدية", 50, 0, 50);
-        luckCards[3] = new Card(0, "حماتك تحبك, ارسلت لك 100 جنيه حوالةز اذهب علي البحرين لتقبضها", 100, BahranPosition, 0);
-        luckCards[4] = new Card(0,"عندك 4 اطفال, ادفع 25 جنيه عن كل طفل مصاريف مدرسة",-25, 0, 0);
-        luckCards[5] = new Card(0,"حصل صدام بسيارتك المؤمنة, تدفع لك شركة التأمين 200 جنيه تصليحها, و ارجع 5 خانات للخلف", 200, -5, 0);
+        luckCards[0] = new Card(0,"You're too funny, pay $100!", -100, 0, 0);
+        luckCards[1] = new Card(0,"You won $50 for being a true patriot!", 50, 0, 0);
+        luckCards[2] = new Card(0,"You've got a baby! Take $50 from every player", 50, 0, 50);
+        luckCards[3] = new Card(0, "Your stepmom gave you $100. Go to Bahrain to take them", 100, BahranPosition, 0);
+        luckCards[4] = new Card(0,"You have four kids. Pay $25 for school supplies for each.",-25, 0, 0);
+        luckCards[5] = new Card(0,"You've been in an accident in an insured car. Take $200 from insurance.", 200, 0, 0);
 
-        trialCards[0] = new Card(1, "هارب من العسكرية, اذهب للسجن حالا", 0, prisonPosition, 0);
-        trialCards[1] = new Card(1, "ربحت قضيتك ضد زملائك, خذ 25 جنيه من كل لاعب", 25, 0, 25);
-        trialCards[2] = new Card(1, "خسرت قضيتك, ادفع 15 جنيه اتعاب محاماة", 15,0,0);
-        trialCards[3] = new Card(1, "ربحت سحب الادخار, خذ 100 جنيه من البنك", 100,0,0);
-        trialCards[4] = new Card(1, "كسرت عمود النور, ادفع 40 جنيه مخالفة", -40,0,0);
-        trialCards[5] = new Card(1, "اتهمت غدرا و ظهرت براءتك, خذ 200 جنيه تعويض", 200,0,0);
+        trialCards[0] = new Card(1, "You dodged the draft. Go to prison right away!", 0, prisonPosition, 0);
+        trialCards[1] = new Card(1, "You won your case against the other players. Take $25 from each!", 25, 0, 25);
+        trialCards[2] = new Card(1, "You lost your case. Pay $15 for the lawyers.", 15,0,0);
+        trialCards[3] = new Card(1, "You won the lottery. Take $100!", 100,0,0);
+        trialCards[4] = new Card(1, "You broke the traffic lights. Pay an $40 fine!", -40,0,0);
+        trialCards[5] = new Card(1, "You were falsely accused and have been proven innocent. Take $200!", 200,0,0);
     }
 
     private static void initBlocks(){
         blocks = new BoardBlock[NUM_BLOCKS];
 
-        blocks[0] = new BoardBlock(3, "البداية") ;
-        blocks[1] = new City("القدس",300,250,750,1000,35, 190,900,1550,1);
-        blocks[2] = new City("غزة",250,200,600,800,30, 130,650,910,1);
-        blocks[3] = new BoardBlock(1, "حظك");
-        blocks[4] = new City("بيروت",300,200,750, 1000,32,180,850,1500,2);
-        blocks[5] = new City("الرياض",250,200,600, 800,29,130,650,750,2);
-        blocks[6] = new City("بغداد",250,200,600, 800,28,120,600,850,2);
-        blocks[7] = new City("النادي",150,0,0, 0,30,0,0,0,0);
-        blocks[8] = new City("بني غازي",150,130,440, 550,22,75,275,650,3);
-        blocks[9] = new City("عدن",100,100,310, 450,17,72,380,600,3);
-        blocks[10] = new BoardBlock(2, "محكمة");
-        blocks[11] = new City("البحرين",90,80,250, 350,15,60,300,480,3);
-        blocks[12] = new BoardBlock(1, "حظك");
-        blocks[13] = new City("الدار البيضاء",250,200,550, 750,30,130,600,850,4);
-        blocks[14] = new City("محطة البنزين",300,0,0, 0,30,0,0,0,0);
-        blocks[15] = new City("تونس",200,100,310, 450,17,72,380,600,4);
-        blocks[16] = new City("الجزائر",200,100,310, 450,17,72,380,600,4);
-        blocks[17] = new BoardBlock(4, "الاتوبيس السريع") ;
-        blocks[18] = new City("الاسكندرية",225,300,850, 1200,45,220,1000,1700,5);
-        blocks[19] = new City("حلب",200,250,750, 1000,35,185,850,1500,5);
-        blocks[20] = new BoardBlock(2, "محكمة");
-        blocks[21] = new City("اسوان",200,165,360, 490,27,130,700,900,6);
-        blocks[22] = new City("دمشق",250,320,900, 1250,50,250,1200,1850,6);
-        blocks[23] = new City("القاهرة",450,400,1200, 1600,55,320,1500,2400,6);
-        blocks[24] = new BoardBlock(5, "السجن");
-        blocks[25] = new City("الخرطوم",200,170,370, 500,27,130,630,1850,7);
-        blocks[26] = new City("الاقصر",200,210,550, 800,25,140,700,900,9);
-        blocks[27] = new City("عمان",250,200,550, 750,30,130,600,850,7);
-        blocks[28] = new City("بورسعيد",250,210,550, 800,30,140,700,900,7);
-        blocks[29] = new BoardBlock(1, "حظك");
-        blocks[30] = new City("صنعاء",250,170,370, 500,25,130,630,1850,8);
-        blocks[31] = new BoardBlock(2, "محكمة");
-        blocks[32] = new City("الكويت",250,200,550, 750,25,130,600,850,8);
-        blocks[33] = new City("قطر",150,210,550, 800,20,140,700,900,8);
+        blocks[0] = new BoardBlock(3, "Start") ;
+        blocks[1] = new City("Jerusalem",300,250,750,1000,35, 190,900,1550,1);
+        blocks[2] = new City("Gaza",250,200,600,800,30, 130,650,910,1);
+        blocks[3] = new BoardBlock(1, "Your Luck");
+        blocks[4] = new City("Beirut",300,200,750, 1000,32,180,850,1500,2);
+        blocks[5] = new City("Riyadh",250,200,600, 800,29,130,650,750,2);
+        blocks[6] = new City("Baghdad",250,200,600, 800,28,120,600,850,2);
+        blocks[7] = new City("The Club",150,0,0, 0,30,0,0,0,0);
+        blocks[8] = new City("Benghazi",150,130,440, 550,22,75,275,650,3);
+        blocks[9] = new City("Aden",100,100,310, 450,17,72,380,600,3);
+        blocks[10] = new BoardBlock(2, "The Court");
+        blocks[11] = new City("Bahain",90,80,250, 350,15,60,300,480,3);
+        blocks[12] = new BoardBlock(1, "Your Luck");
+        blocks[13] = new City("Casablanca",250,200,550, 750,30,130,600,850,4);
+        blocks[14] = new City("Gas Station",300,0,0, 0,30,0,0,0,0);
+        blocks[15] = new City("Tunis",200,100,310, 450,17,72,380,600,4);
+        blocks[16] = new City("Algeria",200,100,310, 450,17,72,380,600,4);
+        blocks[17] = new BoardBlock(4, "The Autobus") ;
+        blocks[18] = new City("Alexandria",225,300,850, 1200,45,220,1000,1700,5);
+        blocks[19] = new City("Aleppo",200,250,750, 1000,35,185,850,1500,5);
+        blocks[20] = new BoardBlock(2, "The Court");
+        blocks[21] = new City("Aswan",200,165,360, 490,27,130,700,900,6);
+        blocks[22] = new City("Damascus",250,320,900, 1250,50,250,1200,1850,6);
+        blocks[23] = new City("Cairo",450,400,1200, 1600,55,320,1500,2400,6);
+        blocks[24] = new BoardBlock(5, "Prison");
+        blocks[25] = new City("Khartoum",200,170,370, 500,27,130,630,1850,7);
+        blocks[26] = new City("Luxor",200,210,550, 800,25,140,700,900,9);
+        blocks[27] = new City("Oman",250,200,550, 750,30,130,600,850,7);
+        blocks[28] = new City("Port Said",250,210,550, 800,30,140,700,900,7);
+        blocks[29] = new BoardBlock(1, "Your Luck");
+        blocks[30] = new City("Sana'a",250,170,370, 500,25,130,630,1850,8);
+        blocks[31] = new BoardBlock(2, "The Court");
+        blocks[32] = new City("Kuwait",250,200,550, 750,25,130,600,850,8);
+        blocks[33] = new City("Qatar",150,210,550, 800,20,140,700,900,8);
 
 
         citiesPerCategory = new int[NUM_CATEGORIES];
