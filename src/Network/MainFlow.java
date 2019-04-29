@@ -310,7 +310,10 @@ class NetworkManager{
         buf = multicastMessage.getBytes();
 
         DatagramPacket packet = new DatagramPacket(buf, buf.length, group, 4446);
-        socket.send(packet);
+        for(int i=0; i<50; i++)
+        {
+            socket.send(packet);
+        }
         socket.close();
     }
 
