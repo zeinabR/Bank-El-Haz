@@ -39,6 +39,9 @@ public class MonopolyGameScreen implements Screen {
     private GameBoard board;
     int numPlayers;
     int currentPlayerTurn = -1;
+    public Sprite dieSprite;
+    Texture[] dieTextures;
+    int dieOutcome = 1;
 
     public MonopolyGameScreen(final BankElHaz game) {
         this(game, 4);
@@ -64,6 +67,18 @@ public class MonopolyGameScreen implements Screen {
         addRectMapObjects(other_objects, collidableObjects);
         RectangleMapObject startObject = (RectangleMapObject) other_objects.get("Start");
         players = new ArrayList<GraphicsPlayer>();
+        String[] dieTexturesAddr = new String[] {
+                "diceWhite_border/dieWhite_border1.png",
+                "diceWhite_border/dieWhite_border2.png",
+                "diceWhite_border/dieWhite_border3.png",
+                "diceWhite_border/dieWhite_border4.png",
+                "diceWhite_border/dieWhite_border5.png",
+                "diceWhite_border/dieWhite_border6.png"
+        };
+        dieTextures = new Texture[6];
+        for (int i = 0; i < 6; i++) {
+            dieTextures[i] = new Texture(Gdx.files.internal(dieTexturesAddr[i]));
+        }
         String[] carTextures = {
                 "cars/car1.png",
                 "cars/car2.png",
@@ -77,6 +92,9 @@ public class MonopolyGameScreen implements Screen {
         }
         board = new GameBoard(n_players);
         hud = new Hud(game.batch, camera.viewportWidth, camera.viewportHeight, board);
+        dieSprite = new Sprite(dieTextures[0]);
+        dieSprite.setPosition(512 * 11 / 2 - 256, 512 * 8 / 2 - 256 );
+        tiledMapRenderer.addSprite(dieSprite);
         initTilePos();
     }
 
@@ -227,9 +245,11 @@ public class MonopolyGameScreen implements Screen {
             boolean skipTurn = true;
             do {
                 currentPlayerTurn = (currentPlayerTurn + 1) % numPlayers;
-                skipTurn = board.updateUserPosition(currentPlayerTurn, players.get(currentPlayerTurn));
+                dieOutcome = board.updateUserPosition(currentPlayerTurn, players.get(currentPlayerTurn));
+                skipTurn = (dieOutcome != 0);
             } while (!skipTurn);
         }
+        dieSprite.setTexture(dieTextures[dieOutcome - 1]);
         updatePlayers(delta);
         GraphicsPlayer currentPlayer = players.get(currentPlayerTurn);
         int i = 0;

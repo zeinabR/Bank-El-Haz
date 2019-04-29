@@ -39,7 +39,7 @@ public class GameBoard {
     GraphicsPlayer playerDecidingGraphicsPlayer;
 
     // returns true if an animation should be played (i.e. the user is moving). False otherwise.
-    public boolean updateUserPosition(int playerID, GraphicsPlayer graphicsPlayer) {
+    public int updateUserPosition(int playerID, GraphicsPlayer graphicsPlayer) {
 
         System.out.println("Updating position of Player " + playerID);
 
@@ -47,23 +47,23 @@ public class GameBoard {
         playerDeciding = currentPlayer;
         playerDecidingGraphicsPlayer = graphicsPlayer;
         System.out.println("Initial pos = " + currentPlayer.position + "!");
-        disc = throwDisc(); // TO-DO: REPORT THIS TO THE GUI.
+        disc = throwDisc(); // TODO: REPORT THIS TO THE GUI.
 
         if(currentPlayer.Prison) {
             currentPlayer.Prison = false;
-            return false ;
+            return 0;
         }
         if (currentPlayer.fastBus){
             currentPlayer.position = (currentPlayer.position+disc*2) %NUM_BLOCKS;
             graphicsPlayer.startAnimatedMotion(disc * 2);
             currentPlayer.fastBus = true;
-            return true;
+            return disc;
         }
         else {
             currentPlayer.position = (currentPlayer.position + disc) %NUM_BLOCKS;
             System.out.print("MOVE " + disc + " TILES ONLY!");
             graphicsPlayer.startAnimatedMotion(currentPlayer.position);
-            return true;
+            return disc;
         }
     }
 
@@ -269,14 +269,14 @@ public class GameBoard {
         luckCards[2] = new Card(0,"You've got a baby! Take $50 from every player", 50, 0, 50);
         luckCards[3] = new Card(0, "Your stepmom gave you $100. Go to Bahrain to take them", 100, BahranPosition, 0);
         luckCards[4] = new Card(0,"You have four kids. Pay $25 for school supplies for each.",-25, 0, 0);
-        luckCards[5] = new Card(0,"You've been in an accident in an insured car. Take $200 from insurance.", 200, 0, 0);
+        luckCards[5] = new Card(0,"Your insured car broke down. Take $200 from insurance.", 200, 0, 0);
 
         trialCards[0] = new Card(1, "You dodged the draft. Go to prison right away!", 0, prisonPosition, 0);
-        trialCards[1] = new Card(1, "You won your case against the other players. Take $25 from each!", 25, 0, 25);
+        trialCards[1] = new Card(1, "Take $25 from each player!", 25, 0, 25);
         trialCards[2] = new Card(1, "You lost your case. Pay $15 for the lawyers.", 15,0,0);
         trialCards[3] = new Card(1, "You won the lottery. Take $100!", 100,0,0);
         trialCards[4] = new Card(1, "You broke the traffic lights. Pay an $40 fine!", -40,0,0);
-        trialCards[5] = new Card(1, "You were falsely accused and have been proven innocent. Take $200!", 200,0,0);
+        trialCards[5] = new Card(1, "You are innocent! Take $200!", 200,0,0);
     }
 
     private static void initBlocks(){
