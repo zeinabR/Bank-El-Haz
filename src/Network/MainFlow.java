@@ -188,6 +188,7 @@ class NetworkManager{
         byte[] buf = new byte[256];
         String rec;
         mul_socket = new MulticastSocket(4446);
+        mul_socket.setInterface(my_IP);
         InetAddress group = InetAddress.getByName(multicast_address);
         mul_socket.joinGroup(group);
         DatagramPacket packet = new DatagramPacket(buf, buf.length);
@@ -306,6 +307,7 @@ class NetworkManager{
         InetAddress group;
         byte[] buf;
         socket = new DatagramSocket();
+        // socket.setInterface(my_IP);
         group = InetAddress.getByName(multicast_address);
         buf = multicastMessage.getBytes();
 
