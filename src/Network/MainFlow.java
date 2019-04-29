@@ -84,8 +84,8 @@ class NetworkManager{
     MulticastSocket mul_socket ;
    
 
-    String [] players_ips=new String[8]; //Max number of players will be 8
-    int [] players_ports=new int[8];
+    String [] players_ips=new String[4]; //Max number of players will be 8
+    int [] players_ports=new int[4];
     int num_connected=0;
     int my_turn;
     Scanner scan;
@@ -162,7 +162,7 @@ class NetworkManager{
                     //Send to player their turn -> confirmation of correct connection to room
                     sendTurn(num_connected);
                
-                    if(num_connected==8){
+                    if(num_connected==3){
                         System.out.println("Max Number of players reached!!No more will be added");
                         break;
                     }
