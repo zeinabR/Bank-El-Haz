@@ -1,13 +1,17 @@
+
 // import sun.net.*;
 import java.net.*;
 import java.util.Scanner;
 // import java.util.concurrent.TimeUnit;
-import java.awt.datatransfer.FlavorListener;
+// import java.awt.datatransfer.FlavorListener;
 
 // import com.sun.tools.javac.util.Pair;
 
 import java.io.*;
+import java.util.Enumeration;
 import java.util.Random; 
+import java.util.*;
+
 
 public class MainFlow {
 
@@ -411,13 +415,34 @@ class NetworkManager{
     }
 
     void getMyIp(){
+        // try {
+        //     my_IP=InetAddress.getAddress();
+        //     System.out.println(my_IP);
+        // } catch (UnknownHostException e) {
+        //     e.printStackTrace();
+        // }
+        Enumeration<NetworkInterface> interfaces = null;
         try {
-            my_IP=InetAddress.getLocalHost();
-            System.out.println(my_IP);
-        } catch (UnknownHostException e) {
-            e.printStackTrace();
+            interfaces = NetworkInterface.getNetworkInterfaces();
+        } catch (SocketException e) {
+            // handle error
+        }
+        String result = null;
+        if (interfaces != null) {
+            while (interfaces.hasMoreElements() && result==null) {
+                NetworkInterface i = interfaces.nextElement();
+                Enumeration<InetAddress> addresses = i.getInetAddresses();
+                while (addresses.hasMoreElements() && (result == null || result.isEmpty())) {
+                    my_IP = addresses.nextElement();
+                    if (!my_IP.isLoopbackAddress()  &&
+                          my_IP.isSiteLocalAddress()) {
+                        result = my_IP.getHostAddress();
+                    }
+                }
+            }
         }
 
+        System.out.println(my_IP);
 
     }
 
