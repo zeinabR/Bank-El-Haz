@@ -1,6 +1,7 @@
 # Don't track content of these folders
 out/
 .idea/
+*.kra
 
 #ignore these files
 *.iml
