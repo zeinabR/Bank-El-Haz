@@ -1,20 +1,20 @@
 package main.java;
 
 public class City extends BoardBlock {
-    public int category; //for coloring and a game feature
+    int category; //for coloring and a game feature
 
     //for checking
-    public boolean sold;
-    public boolean garage;
-    public boolean rest;
-    public boolean market;
-    public int ownerID;
+    boolean sold;
+    boolean garage;
+    boolean rest;
+    boolean market;
+    int ownerID;
 
     //for the owner
-    public int buyCost;
-    public int garageCost;
-    public int restCost;
-    public int marketCost;
+    int buyCost;
+    int garageCost;
+    int restCost;
+    int marketCost;
 
     // for the passengers
     int rent;
@@ -22,7 +22,7 @@ public class City extends BoardBlock {
     int restRent;
     int marketRent;
 
-    City(String name, int buyCost, int garageCost, int restCost, int marketCost, int rent, int garageRent, int restRent, int marketRent) {
+    City(String name, int buyCost, int garageCost, int restCost, int marketCost, int rent, int garageRent, int restRent, int marketRent, int category) {
         type = 0;
         this.name = name;
         this.buyCost = buyCost;
@@ -33,6 +33,7 @@ public class City extends BoardBlock {
         this.garageRent = garageRent;
         this.restRent = restRent;
         this.marketRent = marketRent;
+        this.category = category;
     }
 
     protected void printCityInfo() {
