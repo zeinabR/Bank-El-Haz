@@ -325,7 +325,7 @@ class NetworkManager{
         
 
         try{
-            my_Socket.setSoTimeout(2000);
+            my_Socket.setSoTimeout(5000);
             Socket s=my_Socket.accept(); 
            
             ObjectInputStream din=new ObjectInputStream(s.getInputStream());  
