@@ -259,6 +259,7 @@ class NetworkManager{
 
             connectToRoom();
             connected =recvTurn();
+        
 
             System.out.println("Waiting for RoomMaster to start game!");
             if(connected){
@@ -312,7 +313,7 @@ class NetworkManager{
         buf = multicastMessage.getBytes();
 
         DatagramPacket packet = new DatagramPacket(buf, buf.length, group, 4446);
-        for(int i=0; i<50; i++)
+        for(int i=0; i<10; i++)
         {
             socket.send(packet);
         }
@@ -342,6 +343,7 @@ class NetworkManager{
             return true;
 
         }catch(SocketTimeoutException e){
+            System.out.println(e.getMessage());
             return false;
         }
         catch(ClassNotFoundException e){
