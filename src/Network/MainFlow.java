@@ -4,11 +4,14 @@ import java.net.*;
 import java.util.Scanner;
 // import java.util.concurrent.TimeUnit;
 // import java.awt.datatransfer.FlavorListener;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 
 // import com.sun.tools.javac.util.Pair;
 
 import java.io.*;
 import java.util.Enumeration;
+import java.util.InputMismatchException;
 import java.util.Random; 
 
 
@@ -20,6 +23,8 @@ public class MainFlow {
 
         //initialize Network Manager
         NetworkManager net_mang=new NetworkManager();
+        net_mang.startNotifier();
+
         
 
         //Get user game state (host or player)
@@ -34,177 +39,236 @@ public class MainFlow {
             if(s=='m'|| s=='M'){ //If room master, listen for other players
 
                 net_mang.isRoomMaster();
-                // while(true){}
                 break;
 
             }
             else if(s=='r' || s=='R'){ //if not room master, connect to exsiting room
                 
-                boolean successful=net_mang.isPlayer();
-                if(successful){
+                net_mang.isPlayer();
+                if(net_mang.wrong_info){
+                    System.out.println("Room probably doesn't exist!");
+                }
+                else if(net_mang.master_dis){
+                    System.out.println("OOPS! It seems like master disconnectd before starting the game! start over");
+                }else{
                     break;
                 }
-                else{
-                    System.out.println("Something went wrong!!, try again");
-                }
-                // while(true){}
-               
             
             }
             else{ //wrong input dude!
                 System.out.println("please enter a valid input , 'm' or 'r': ");
                
             }
+           
 
         }
-
-       
-
-        
 
         System.out.println("lets play!");
         int curr_turn=0;
 
         while(true){
             if(net_mang.my_turn==curr_turn){
-                //let servers know you're alive!
-                // net_mang.send_Object((Object)net_mang.my_turn);
+    
                 
-                System.out.println("hi there, enter something! it is meeee "+curr_turn);
+                System.out.println("hi there, enter something! it is meeee " + curr_turn);
                 char s = scan.next().charAt(0);
-                if(s=='q'){
+                if(s=='q') {
                     break;
+                }              
+
+                for(int i=0; i<net_mang.num_connected.get()+1; i++){
+                    if(i!=curr_turn){
+                        net_mang.send_Object((Object)"Game steps",net_mang.players_ips[i],net_mang.players_ports[i]);
+
+                    }
+          
                 }
               
-
-                net_mang.send_Object((Object)"Game steps");
-
             }
-            else{
-                if(! net_mang.my_Socket.isClosed()){
-                    try{
-                        net_mang.my_Socket.close();
-                        net_mang.my_Socket= new ServerSocket(net_mang.my_port);
-                    }catch(IOException e){
-                        System.out.println(e.getMessage());
-                        System.out.println("ioexcept here");
+            else { 
+                if( net_mang.players_connected[curr_turn].get()){
+                    if(!net_mang.my_Socket.isClosed()){
+                        try{
+                            net_mang.my_Socket.close();
+                            net_mang.my_Socket= new ServerSocket(net_mang.my_port);
+                        }catch(IOException e){
+                            System.out.println(e.getMessage());
+                            System.out.println("ioexcept here");
+                        }
                     }
+                   
+                    System.out.println("Not my turn, is actually the turn of player "+ (int)curr_turn);
+                    Object rcv = net_mang.rcv_Object(10*1000); 
+                    System.out.println((String)rcv);
 
                 }
-               
-                System.out.println("Not my turn, is actually the turn of player "+ (int)curr_turn);
-                Object rcv =net_mang.rcv_Object(20*1000); 
-                System.out.println((String)rcv);
-
+                else{
+                    // skip turn, here could release their assets if not released
+                }
+            
             }
             curr_turn++;
-            curr_turn=curr_turn%(net_mang.num_connected+1);
-
-
+            curr_turn=curr_turn%(net_mang.num_connected.get()+1);
         }
-
-        
-        // while(true){}
-       
-      
-
-
     }
-
-
-
-
 } 
 
 
-class NetworkManager{
-
+class NetworkManager {
     String multicast_address="230.0.0.0"; //Address for multicasting
     InetAddress my_IP;
     ServerSocket my_Socket;
-    ServerSocket listener;
+    ServerSocket[] listeners={null,null,null,null};
     int my_port;
     int room_num;
     MulticastSocket mul_socket ;
-   
+    AtomicBoolean[] players_connected={new AtomicBoolean(),new AtomicBoolean(),new AtomicBoolean(),new AtomicBoolean()};
 
+   
     String [] players_ips=new String[4]; //Max number of players will be 8
     int [] players_ports=new int[4];
-    boolean [] player_connected={false,false,false,false};
-    int num_connected=0;
+    int [][] all_listener_ports=new int[4][4];
+    AtomicInteger num_connected= new AtomicInteger();
     int my_turn;
     Scanner scan;
+    boolean master_dis=false,wrong_info=false;
+
+
+    boolean successful_rcv=false,startGame=false,connected=false;
 
     // Contructor ///////////////////////////
     NetworkManager(){
         getMyIp();
         scan = new Scanner(System.in);
+    }
+
+    void startNotifier(){
+        
+      
+        Thread notifier = new Thread(new Runnable() //Threading to take user input to stop blocking for other connections
+        { public void run(){sendAlive();} });
+        notifier.start();
+
+    
 
     }
 
+    void checkAlive(int num){
+        System.out.println(num+" checking it alive ");
+        Socket s=null;
+        while(true){
+            try{
+                listeners[num].setSoTimeout(3000);
+                s= listeners[num].accept(); 
+                ObjectInputStream din=new ObjectInputStream(s.getInputStream());  
+                int ans=(int)din.readObject(); 
+                din.close();  
+                s.close();  
+                if(ans!=1)
+                    break;
+               
+            } catch(SocketTimeoutException e){
+                System.out.println(e.getMessage());
+                System.out.println("SocketTimeoutException occured!");
+                if(!startGame && num==0){
+                    players_connected[0].set(false);
+                    System.out.println("Sorry! host is dead! you need to restart man!");
+                }
+                break;
+            }
+            catch(ClassNotFoundException e){
+                System.out.println(e.getMessage());
+                System.out.println("ClassNotFoundException occured!");
+                break;
+            }
+            catch(IOException e){
+                System.out.println(e.getMessage());
+                System.out.println("IOException occured!");
+                break;
+            }
+        }
+        try{
+            System.out.println("player num" + num+ "is disconnected");
+            listeners[num].close();
+            num_connected.set(num_connected.get()-1);
+            players_connected[num].set(false);
+
+        }catch(IOException e){
+            System.out.println("can't close listener socket");
+        }
+
+    }
+
+    void sendAlive(){
+        while(true){
+            try{
+                for(int i=0; i<4; i++){
+                    if(players_connected[i].get()&& i!=my_turn)
+                    {
+                        send_Object(1,players_ips[i],all_listener_ports[i][my_turn]);
+                    }
+                }
+                
+                Thread.sleep(1000);
+    
+            } catch(InterruptedException e){
+                System.out.println(e.getMessage());
+                break;
+              
+            } 
+
+        }
+    }
+
+
+
+
+
     Object rcv_Object(int timeout){
+
         Object rcv=null;
         try{
             my_Socket.setSoTimeout(timeout);
-            Socket s=my_Socket.accept(); 
-           
+            Socket s= my_Socket.accept(); 
             ObjectInputStream din=new ObjectInputStream(s.getInputStream());  
-    
             rcv=din.readObject(); 
-            
-          
-        
             din.close();  
             s.close();  
-            
-         
-
-        }catch(SocketTimeoutException e){
+            successful_rcv=true;
+        } catch(SocketTimeoutException e){
             //Call function that syas player is not there
             System.out.println(e.getMessage());
-            System.out.println("timeout probl");
-
+            System.out.println("SocketTimeoutException occured!");
+            successful_rcv=false;
         }
         catch(ClassNotFoundException e){
             System.out.println(e.getMessage());
-            System.out.println("class prob");
-    
+            System.out.println("ClassNotFoundException occured!");
+            successful_rcv=false;
         }
         catch(IOException e){
             System.out.println(e.getMessage());
-            System.out.println("ioexcep");
+            System.out.println("IOException occured!");
+            successful_rcv=false;
         }
         return rcv;
 
     }
 
-    void send_Object(Object message){
-        for(int i=0; i<=num_connected; i++){
+    void send_Object(Object message, String ip,int port){
             try{      
-                if(i!=my_turn){
-                    Socket s=new Socket(players_ips[i],players_ports[i]);  
-                    System.out.println("sending alive to "+i);
-        
-                    ObjectOutputStream dout=new ObjectOutputStream(s.getOutputStream());  
-                    dout.writeObject(message);  
-                    dout.flush();  
-                    dout.close();  
-                    s.close(); 
-
-                }
-                
-            }catch(ConnectException e){
+                Socket s = new Socket(ip,port);  
+                ObjectOutputStream dout = new ObjectOutputStream(s.getOutputStream());  
+                dout.writeObject(message);  
+                dout.flush();  
+                dout.close();  
+                s.close(); 
+            } catch(ConnectException e){
                //Do nothing for now
-               System.out.println("uh uh, seems we have lost one of us "+ i+ "but we must carry on");
-
-            }
-            catch(Exception e){
+               System.out.println("uh uh, Connection error with ip: "+ip+ " port: "+port);
+            } catch(Exception e) {
                 System.out.println(e);
-            }   
-            
-        }
-
-
+            }
     }
 
     
@@ -212,8 +276,7 @@ class NetworkManager{
     
     // --Room Master Methods 
     void isRoomMaster(){
-
-        
+        num_connected.set(0);        
         try{
             my_turn=0; //Host is the first to play, always
             my_Socket= new ServerSocket(0);
@@ -222,32 +285,22 @@ class NetworkManager{
     
             // Scanner scan = new Scanner(System.in);
             char s='l';
-            Thread thread = new Thread(new Runnable() //Threading to take user input to stop blocking for other connections
+            Thread create_room_t = new Thread(new Runnable() //Threading to take user input to stop blocking for other connections
             { public void run(){createRoom();} });
-            thread.start();
+            create_room_t.start();
 
-            
-            while(s!='s'){ //will not be able to press enter without atleaast one player playing.
+            while(s != 's'){ //will not be able to press enter without at leaast one player playing.
                 System.out.println("enter 's' to start game");
                 s = scan.next().charAt(0);
             }
             mul_socket.close();
-            thread.join();
-
+            create_room_t.join();
             sendPlayersInfo();
-
-                
-            // scan.close();
-
-
        } catch(InterruptedException e){
             System.out.println(e.getMessage());
-       }
-       catch(IOException e){
+       } catch(IOException e){
             System.out.println(e.getMessage());
         }
-
-  
     }
 
     void createRoom(){
@@ -260,23 +313,33 @@ class NetworkManager{
             try{
                 System.out.println("I'm a Master!");
                 //recieve room_num, player IP, player socket
-               
                 String[] arr_rec=recieveMulticast(); 
-                
-
-                if(Integer.parseInt(arr_rec[0])==room_num){
-                    
-
-                    num_connected++;
+                System.out.println(num_connected.get());
+                if(Integer.parseInt(arr_rec[0])==room_num && num_connected.get()<3){
+                    int curr_turn=0;
+                    num_connected.set(num_connected.get()+1);
+                   
+                    for(int i=0; i<num_connected.get()+1; i++){
+                        if(!players_connected[i].get()){
+                            curr_turn=i;
+                            break;
+                        }
+                    }
+                    System.out.println("connected with "+ arr_rec[1]+" and main port "+arr_rec[2]+ "and listener port "+arr_rec[3]+"curr turn "+curr_turn);
+                    // all_listener_ports[0][curr_turn]= Integer.parseInt(arr_rec[3]);
                     //add to list of game players
-                    addPlayer(arr_rec[1], Integer.parseInt(arr_rec[2]), num_connected);
-
+                    addPlayer(arr_rec[1], Integer.parseInt(arr_rec[2]),curr_turn);
+                    listeners[curr_turn]=new ServerSocket(0);
+                    all_listener_ports[0][curr_turn]=listeners[curr_turn].getLocalPort();
+                    all_listener_ports[curr_turn][0]=Integer.parseInt(arr_rec[3]);
+                    all_listener_ports[curr_turn][1]=Integer.parseInt(arr_rec[4]);
+                    all_listener_ports[curr_turn][2]=Integer.parseInt(arr_rec[5]);
+                    all_listener_ports[curr_turn][3]=Integer.parseInt(arr_rec[6]);
+                    listenToPlayer(curr_turn);
                     //Send to player their turn -> confirmation of correct connection to room
-                    sendTurn(num_connected);
-               
-                    if(num_connected==3){
+                    sendTurn(curr_turn, all_listener_ports[0][curr_turn] );
+                    if(num_connected.get()==3){
                         System.out.println("Max Number of players reached!!No more will be added");
-                        break;
                     }
                 }
   
@@ -286,10 +349,20 @@ class NetworkManager{
                 System.out.println(e.getMessage());
                 break;
             }
-
-
         }
-     
+    }
+
+
+    void listenToPlayer(int turn){
+        
+       
+        Thread listener_t = new Thread(new Runnable() //Threading to take user input to stop blocking for other connections
+        { public void run(){checkAlive(turn);} });
+        listener_t.start();
+
+      
+
+
     }
 
     String[] recieveMulticast() throws IOException{
@@ -304,109 +377,107 @@ class NetworkManager{
         mul_socket.receive(packet);
         rec = new String(packet.getData(), 0, packet.getLength());
         System.out.println("Recieved: "+rec);
-        String[] arr_rec = rec.split(" ", 3);
+        String[] arr_rec = rec.split(" ", 7);
         mul_socket.leaveGroup(group);
         mul_socket.close();
         return arr_rec;
     
     }
 
-    void sendTurn(int num){
+    void sendTurn(int num, int listening_port){
 
-        System.out.println("sending turn to socket "+players_ips[num]+players_ports[num]);
-
-        try{      
-      
-            Socket s=new Socket(players_ips[num],players_ports[num]);  
-            // System.out.println("I closed socket! "+s.isClosed());
-        
-
-            ObjectOutputStream dout=new ObjectOutputStream(s.getOutputStream());  
-            dout.writeObject(num);
-            String[] host_data={(my_IP.getHostAddress()).trim(),Integer.toString(my_port)};
-            dout.writeObject(host_data);
-            dout.flush();  
-            dout.close();  
-            s.close();  
-            }catch(ConnectException e){
-                num_connected--;
-            }
-            catch(Exception e){
-                System.out.println(e);
-            }   
+            System.out.println("sending turn to socket "+players_ips[num]+players_ports[num]);
+            //send player turn
+            send_Object(num,players_ips[num],players_ports[num]);
+            //preparing my data as a room master to send
+            String[] master_data={(my_IP.getHostAddress()).trim(),Integer.toString(my_port),Integer.toString(listening_port)};
+            send_Object(master_data,players_ips[num],players_ports[num]);
     }
 
     void sendPlayersInfo(){
 
-        for( int i=1; i<=num_connected; i++){
-            try{      
-      
-                Socket s=new Socket(players_ips[i],players_ports[i]);  
-                System.out.println("sending info to "+i);
-    
-                ObjectOutputStream dout=new ObjectOutputStream(s.getOutputStream());  
-                dout.writeObject(players_ips);  
-                dout.writeObject(players_ports);  
-                dout.writeInt(num_connected);
-                dout.flush();  
-                dout.close();  
-                s.close();  
-            }catch(ConnectException e){
-               //Do nothing for now
-               System.out.println("uh uh, seems we have lost one of us "+ i+ "but we must carry on");
+        for( int i=1; i<= num_connected.get(); i++){  
 
-            }
-            catch(Exception e){
-                System.out.println(e);
-            }   
+            //Here we could check if player is actually alive
+
+
+            //send necessary data to other players
+            send_Object(players_ips,players_ips[i],players_ports[i]);
+            send_Object(players_ports,players_ips[i],players_ports[i]);
+            send_Object(all_listener_ports,players_ips[i],players_ports[i]);
+            send_Object(num_connected.get(),players_ips[i],players_ports[i]);
+
         }
-
+            
     }
+
+
     // --Room Master Methods 
-    boolean isPlayer(){
-            boolean startGame=false,connected=false;
-
-            connectToRoom();
+    void isPlayer(){
+        startGame=false;connected=false;
+        connectToRoom();
+      
             connected =recvTurn();
-        
-
             System.out.println("Waiting for RoomMaster to start game!");
+    
             if(connected){
                 startGame=recvPlayersInfo();
+                if(startGame==false){
+                    master_dis=true;
+                }
             }
-           
+            else{
+                wrong_info=true;
+            }
+            for(int i=0; i<=num_connected.get(); i++){
+                System.out.println(players_ips[i]+' '+players_ports[i]);
+            }
+            for(int i=1; i<=num_connected.get(); i++){
+                if(i!=my_turn){
+                    listenToPlayer(i);
+                    players_connected[i].set(true);
 
-        for(int i=0; i<=num_connected; i++){
-            System.out.println(players_ips[i]+' '+players_ports[i]);
-        }
-
-        return startGame&connected;
-
-          
-
-       
+                }
                 
+            }
+
+
+           
+  
     }
    
     void connectToRoom(){
-
-        try{
-            my_Socket= new ServerSocket(0);
-            // Scanner scan = new Scanner(System.in);
-            System.out.println("Connect to room, please enter a room number:");
-            // while(!scan.hasNextLine()){
-            // }
-            room_num = scan.nextInt();
-            my_port=my_Socket.getLocalPort();
-            String connection_data=room_num+" "+(my_IP.getHostAddress()).trim()+" "+my_port;
-            System.out.println("stuff are:"+connection_data);
-            sendMulticast(connection_data);
-            // scan.close();
-            // recieveHostInfo();
+        while(true){
+            try{
+                my_Socket= new ServerSocket(0); //instansiate my socket and port
+                my_port=my_Socket.getLocalPort();
+                System.out.println("Connect to room, please enter a room number:");
+                room_num = scan.nextInt();
+                for(int i=0; i<4; i++){
+                    listeners[i]= new ServerSocket(0);
     
-        }
-        catch(IOException e){
-            System.out.println(e.getMessage());
+                }
+                String connection_data=room_num+" "+(my_IP.getHostAddress()).trim()+" "+my_port+" "+listeners[0].getLocalPort()
+                +" "+listeners[1].getLocalPort()+" "+listeners[2].getLocalPort()+" "+listeners[3].getLocalPort();
+                System.out.println(connection_data);
+                sendMulticast(connection_data);
+                players_connected[0].set(true);
+                listenToPlayer(0);
+                break;
+            }
+            catch(IOException e){
+                System.out.println(e.getMessage());
+                break;
+            }
+            catch(InputMismatchException e1){
+                
+                System.out.println("wronnnggg inputt, please enter a number");
+                scan=new Scanner(System.in);
+                
+    
+            }
+            
+
         }
         
 
@@ -417,10 +488,8 @@ class NetworkManager{
         InetAddress group;
         byte[] buf;
         socket = new DatagramSocket();
-        // socket.setInterface(my_IP);
         group = InetAddress.getByName(multicast_address);
         buf = multicastMessage.getBytes();
-
         DatagramPacket packet = new DatagramPacket(buf, buf.length, group, 4446);
         for(int i=0; i<10; i++)
         {
@@ -430,97 +499,60 @@ class NetworkManager{
     }
 
     boolean recvTurn(){
-        System.out.println("my add "+(my_IP.getHostAddress()).trim()+my_port);
-        
 
-        try{
-            my_Socket.setSoTimeout(5000);
-            Socket s=my_Socket.accept(); 
-           
-            ObjectInputStream din=new ObjectInputStream(s.getInputStream());  
-    
-            
-            my_turn=(int)din.readObject();  
-            String[] host_data=(String[])din.readObject();
-            players_ips[0]=host_data[0];
-            players_ports[0]=Integer.parseInt(host_data[1]);
-            System.out.println("Host add "+players_ips[0]+" "+ players_ports[0]);
-
-            System.out.println("I got my tur: "+my_turn);  
-            din.close();  
-            s.close();  
-            return true;
-
-        }catch(SocketTimeoutException e){
-            System.out.println(e.getMessage());
-            return false;
+        Object temp=rcv_Object(5000);
+       
+        if(temp!=null){
+            my_turn=(int) temp;
+            String[] host_data=(String[])rcv_Object(5000);
+            if(successful_rcv){
+                addPlayer(host_data[0],Integer.parseInt(host_data[1]),0);
+                all_listener_ports[0][my_turn]=Integer.parseInt(host_data[2]); 
+                System.out.println("I got my tur: "+my_turn);  
+            }
+          
+            return successful_rcv;
         }
-        catch(ClassNotFoundException e){
-            System.out.println(e.getMessage());
-            return false;
+        System.out.println("nooooooo");
+     
+        //thread for host
+ 
+        return false;
 
-        }
-        catch(IOException e){
-            System.out.println(e.getMessage());
-            return false;
-        }
-        
+      
     }
 
     boolean recvPlayersInfo(){
+        // successful_rcv=false;
+        // while( players_connected[0].get()& !successful_rcv){
+        //     players_ips=(String[]) rcv_Object(1000);
+
+        // }
+        // successful_rcv=false;
         
-        while(true){
+        // while( players_connected[0].get()& !successful_rcv){
+        //     players_ips=(String[]) rcv_Object(1000);
 
-            try{
-                my_Socket.setSoTimeout(3000);
-                Socket s=my_Socket.accept(); 
-    
-                ObjectInputStream  din=new ObjectInputStream(s.getInputStream());  
-                players_ips=(String[])din.readObject(); 
-                players_ports=(int[])din.readObject();  
-                num_connected=din.readInt();
-                din.close();  
-                s.close();  
-               return true;
-            }
-            catch(ClassNotFoundException e){
-                System.out.println(e.getMessage());
-                return false;
-    
-    
-            }
-            catch(SocketTimeoutException e){
-                
-                try{
-                    System.out.println("checking for room master");
-                    Socket s=new Socket(players_ips[0],players_ports[0]);  
-                    s.close();
-                }
-                catch(ConnectException ec){
-                    //Do nothing for now
-                    System.out.println("no master!");
+        // }
+        // successful_rcv=false;
+        // while( players_connected[0].get()& !successful_rcv){
+        //     all_listener_ports=(int[][]) rcv_Object(1000);
 
-                    System.out.println(ec);
-                    // break;
-                    return false;
+        // }
+        // successful_rcv=false;
+        // int temp=0;
+        // while( players_connected[0].get()& !successful_rcv){
+        //    temp =(int) rcv_Object(1000);
+        // }
+        
+        // num_connected.set(temp);
+
+        players_ips=(String[]) rcv_Object(0);
+        players_ports=(int[]) rcv_Object(0); 
+        all_listener_ports=(int[][]) rcv_Object(0);
+        num_connected.set((int) rcv_Object(0));
     
-                }
-                catch(IOException eo){
-                    System.out.println(eo.getMessage());
-                }
-    
-
-                continue;
-                
-            }
-            catch(IOException e){
-                System.out.println(e.getMessage());
-                return false;
-            }
-
-        }
-      
-
+        return successful_rcv;
     }
 
     // Utility ///////////////////////////
@@ -528,15 +560,10 @@ class NetworkManager{
         // num_connected++;
         players_ips[num]=ip;
         players_ports[num]=port;
+        players_connected[num].set(true);
     }
 
     void getMyIp(){
-        // try {
-        //     my_IP=InetAddress.getAddress();
-        //     System.out.println(my_IP);
-        // } catch (UnknownHostException e) {
-        //     e.printStackTrace();
-        // }
         Enumeration<NetworkInterface> interfaces = null;
         try {
             interfaces = NetworkInterface.getNetworkInterfaces();
