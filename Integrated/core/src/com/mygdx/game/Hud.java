@@ -45,7 +45,7 @@ public class Hud {
     public boolean flip_view = false;
     public int buy_result = -1;
 
-    public final float turnLength = 05;
+    public final float turnLength = 25;
 
     private GameBoard board;
 
@@ -112,7 +112,7 @@ public class Hud {
         readOnlyDialog.getContentTable().add(readOnlyDialogLabel);
         Gdx.input.setInputProcessor(stage);
 
-        table.setDebug(true);
+        table.setDebug(false);
 
         table.add(playerNameLabel).expandX().padTop(2);
         table.add(playerScoreLabel).expandX().padTop(2);

@@ -17,6 +17,7 @@ import com.badlogic.gdx.maps.tiled.TmxMapLoader;
 import com.badlogic.gdx.math.Rectangle;
 import com.badlogic.gdx.math.Vector2;
 import com.badlogic.gdx.utils.Queue;
+import com.mygdx.game.GameLogic.BoardBlock;
 import com.mygdx.game.GameLogic.GameBoard;
 import com.mygdx.game.GameLogic.GamePlayer;
 import com.mygdx.game.Network.NetworkManager;
@@ -250,8 +251,10 @@ public class MonopolyGameScreen implements Screen {
     }
 
     private void update(float delta) {
-        currentPlayerTurn = (currentPlayerTurn + 1) % numPlayers;
-        hud.score = board.players.get(myID).account;
+        if (hud.time <= 1e-5) {
+            currentPlayerTurn = (currentPlayerTurn + 1) % numPlayers;
+            hud.score = board.players.get(myID).account;
+        }
         if (currentPlayerTurn == myID) {
             if (hud.time == 0) {
                 dieOutcome = board.updateUserPosition(currentPlayerTurn, players.get(currentPlayerTurn));
@@ -282,6 +285,8 @@ public class MonopolyGameScreen implements Screen {
 //                            objectOutputStreams[i].writeObject(message);
                             objectOutputStreams[i].writeInt(currentPlayerTurn);
                             objectOutputStreams[i].writeInt(currentGamePlayer.position);
+                            objectOutputStreams[i].writeInt(currentGamePlayer.account);
+                            objectOutputStreams[i].writeObject(board.blocks[board.changedBlock]);
                             objectOutputStreams[i].flush();
                         } catch (IOException e) {
                             System.out.println(e.getMessage());
@@ -293,41 +298,40 @@ public class MonopolyGameScreen implements Screen {
         } else {
             hud.update(delta, new ArrayList<Notification>());
             if (hud.time == 0) {
-//                if (!manager.my_Socket.isClosed()) {
-//                    try {
-//                        manager.my_Socket.close();
-//                        manager.my_Socket = new ServerSocket(manager.my_port);
-//                    } catch (IOException e) {
-//                        System.out.println(e.getMessage());
-//                        System.out.println("IO Exception occured on receiving updates!");
-//                    }
-//                }
-//                GamePlayer gp = (GamePlayer) manager.rcv_Object( 10 * 1000);
-//                Changes changes = (Changes) manager.rcv_Object(10 * 1000);
-//                System.out.println("Received: " + changes.newPos);
-//                board.players.set(gp.id, gp);
-                try {
-//                    String message = (String) objectInputStream.readObject();
-//                    System.out.println("RECV: " + message);
-//                    Scanner scanner = new Scanner(message);
-//                    int idToChange = scanner.nextInt();
-//                    int newPos = scanner.nextInt();
-                    System.out.println("Starting to receive: ");
-                    int idToChange = objectInputStream.readInt();
-                    int newPos = objectInputStream.readInt();
-                    System.out.println("Received objects");
-                    GamePlayer gamePlayer = board.players.get(idToChange);
-                    int nextTile = (gamePlayer.position + 1) % 34;
-                    gamePlayer.position = newPos;
-                    GraphicsPlayer player = players.get(idToChange);
-                    player.startAnimatedMotion(newPos, nextTile);
-                } catch (IOException e) {
-                    System.out.println(e.getMessage());
-                    System.out.println("IO Exception occured on receiving updates!"); }
-//                } catch (ClassNotFoundException e) {
-//                    System.out.println(e.getMessage());
-//                }
+                if (!manager.my_Socket.isClosed()) {
+                    try {
+                        manager.my_Socket.close();
+                        manager.my_Socket = new ServerSocket(manager.my_port);
+                    } catch (IOException e) {
+                        System.out.println(e.getMessage());
+                        System.out.println("IO Exception occured on receiving updates!");
+                    }
+                }
 
+                if (manager.players_connected[currentPlayerTurn].get()) {
+                    try {
+                        System.out.println("Starting to receive: ");
+                        int idToChange = objectInputStream.readInt();
+                        int newPos = objectInputStream.readInt();
+                        int newAccount = objectInputStream.readInt();
+                        board.blocks[newPos] = (BoardBlock) objectInputStream.readObject();
+                        System.out.println("Received objects");
+                        GamePlayer gamePlayer = board.players.get(idToChange);
+                        gamePlayer.account = newAccount;
+                        int nextTile = (gamePlayer.position + 1) % 34;
+
+                        if (gamePlayer.position != newPos) {
+                            gamePlayer.position = newPos;
+                            GraphicsPlayer player = players.get(idToChange);
+                            player.startAnimatedMotion(newPos, nextTile);
+                        }
+                    } catch (IOException e) {
+                        System.out.println(e.getMessage());
+                        System.out.println("IO Exception occured on receiving updates!");
+                    } catch (ClassNotFoundException e) {
+                        System.out.println(e.getMessage());
+                    }
+                }
                 // Receive updates from others
             }
         }

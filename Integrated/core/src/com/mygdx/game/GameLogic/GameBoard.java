@@ -25,7 +25,7 @@ public class GameBoard {
     private static  final int BahranPosition = 11;
     private static final int NUM_CATEGORIES = 10;
 
-    private static BoardBlock [] blocks;
+    public static BoardBlock [] blocks;
     private static Card[] luckCards; 
     private static Card[] trialCards;
     public LinkedList<GamePlayer> players;
@@ -37,6 +37,7 @@ public class GameBoard {
 
     GamePlayer playerDeciding;
     GraphicsPlayer playerDecidingGraphicsPlayer;
+    public int changedBlock = 0;
 
     // returns true if an animation should be played (i.e. the user is moving). False otherwise.
     public int updateUserPosition(int playerID, GraphicsPlayer graphicsPlayer) {
@@ -63,6 +64,7 @@ public class GameBoard {
             graphicsPlayer.startAnimatedMotion(currentPlayer.position, (currentPlayer.position - disc + 1) % NUM_BLOCKS);
         }
 
+        changedBlock = currentPlayer.position;
         BoardBlock currentBlock = blocks[currentPlayer.position];
         switch (currentBlock.type) {
             case 0:
