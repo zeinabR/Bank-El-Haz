@@ -28,7 +28,7 @@ public class GameBoard {
     private static BoardBlock [] blocks;
     private static Card[] luckCards; 
     private static Card[] trialCards;
-    public static LinkedList<GamePlayer> players;
+    public LinkedList<GamePlayer> players;
     private static int disc;
 
     private static int []citiesPerCategory;
@@ -47,21 +47,20 @@ public class GameBoard {
         playerDeciding = currentPlayer;
         playerDecidingGraphicsPlayer = graphicsPlayer;
         System.out.println("Initial pos = " + currentPlayer.position + "!");
-        disc = throwDisc(); // TODO: REPORT THIS TO THE GUI.
+        disc = throwDisc();
 
-        if(currentPlayer.Prison) {
+        if (currentPlayer.Prison) {
             currentPlayer.Prison = false;
-            return 0;
         }
         if (currentPlayer.fastBus){
             currentPlayer.position = (currentPlayer.position+disc*2) %NUM_BLOCKS;
-            graphicsPlayer.startAnimatedMotion(currentPlayer.position);
+            graphicsPlayer.startAnimatedMotion(currentPlayer.position, (currentPlayer.position - disc * 2 + 1) % NUM_BLOCKS);
             currentPlayer.fastBus = false;
         }
         else {
             currentPlayer.position = (currentPlayer.position + disc) %NUM_BLOCKS;
 //            System.out.print("MOVE " + disc + " TILES ONLY!");
-            graphicsPlayer.startAnimatedMotion(currentPlayer.position);
+            graphicsPlayer.startAnimatedMotion(currentPlayer.position, (currentPlayer.position - disc + 1) % NUM_BLOCKS);
         }
 
         BoardBlock currentBlock = blocks[currentPlayer.position];
@@ -136,22 +135,22 @@ public class GameBoard {
                     message = "Congrats! You just completed the city's group!";
                 else
                     message = String.format("Congrats! %s is now yours!", city.name);
-                playerDecidingGraphicsPlayer.notifications.addFirst(new Notification(message, -1));
+                playerDecidingGraphicsPlayer.notifications.add(new Notification(message, -1));
             } else if (city.ownerID == playerDeciding.id) {
                 if (!city.garage) {
                     player.account -= city.garageCost;
                     city.garage= true;
-                    playerDecidingGraphicsPlayer.notifications.addFirst(new Notification(
+                    playerDecidingGraphicsPlayer.notifications.add(new Notification(
                             String.format("%s's garage is now yours!", city.name), -1));
                 } else if (!city.rest) {
                     player.account -= city.restCost;
                     city.rest = true;
-                    playerDecidingGraphicsPlayer.notifications.addFirst(new Notification(
+                    playerDecidingGraphicsPlayer.notifications.add(new Notification(
                             String.format("%s's rest is now yours!", city.name), -1));
                 } else if (!city.market) {
                     player.account -= city.marketCost;
                     city.market = true;
-                    playerDecidingGraphicsPlayer.notifications.addFirst(new Notification(
+                    playerDecidingGraphicsPlayer.notifications.add(new Notification(
                             String.format("%s's market is now yours!", city.name), -1));
                 }
             }
@@ -164,7 +163,7 @@ public class GameBoard {
         // TODO: PRINT THIS IN THE GUI.
         city.printCityInfo();
         if (player.account > city.buyCost) {
-            gp.notifications.addFirst(new Notification(city.buyCost, city.name, -1));
+            gp.notifications.add(new Notification(city.buyCost, city.name, -1));
         }
     }
     private static void passenger(GamePlayer player, GraphicsPlayer gp, City city){
@@ -176,7 +175,7 @@ public class GameBoard {
             if(city.market)
                 totalRent += city.marketRent;
 
-            gp.notifications.addFirst(new Notification(String.format("You should pay $%5d to Player %1d", totalRent, city.ownerID), -1));
+            gp.notifications.add(new Notification(String.format("You should pay $%5d to Player %1d", totalRent, city.ownerID), -1));
 
             player.account -= totalRent;
             if(player.account <= 0)
@@ -191,25 +190,25 @@ public class GameBoard {
             // Notify the player of his or her options.
             if (!city.garage) {
                 if (player.account > city.garageCost) {
-                    graphicsPlayer.notifications.addFirst(new Notification(city.garageCost,
+                    graphicsPlayer.notifications.add(new Notification(city.garageCost,
                             String.format("a Garage for %s", city.name), -1));
                 }
             } else if (!city.rest) {
                 if (player.account > city.restCost) {
-                    graphicsPlayer.notifications.addFirst(new Notification(city.restCost,
+                    graphicsPlayer.notifications.add(new Notification(city.restCost,
                             String.format("a Rest coast for %s", city.name), -1));
 
                 }
             } else if (!city.market) {
                 if (player.account > city.marketCost) {
-                    graphicsPlayer.notifications.addFirst(new Notification(city.marketCost,
+                    graphicsPlayer.notifications.add(new Notification(city.marketCost,
                             String.format("a Market cost for %s", city.name), -1));
                 }
             }
         }
     }
 
-    private static void TrialHazak(GamePlayer player, GraphicsPlayer graphicsPlayer, int blockType){
+    private void TrialHazak(GamePlayer player, GraphicsPlayer graphicsPlayer, int blockType){
         Card card;
         if(blockType == 1) {
             card = luckCards[luckIndex];
@@ -221,7 +220,7 @@ public class GameBoard {
             trialIndex = (trialIndex+1) % NUM_CARDS;
             System.out.print("Trial Time! \n");
         }
-        graphicsPlayer.notifications.addFirst(new Notification(card.msg, -1));
+        graphicsPlayer.notifications.add(new Notification(card.msg, -1));
 //        System.out.print(card.msg + "\n");
 
         if(card.others > 0){//other players should pay to him
@@ -244,13 +243,15 @@ public class GameBoard {
             }
             else if (card.playerPos == prisonPosition)
                 player.Prison = true;
+            int nextTile = (player.position + 1) % NUM_BLOCKS;
             player.position = card.playerPos;
-            graphicsPlayer.startAnimatedMotion(player.position);
+            graphicsPlayer.startAnimatedMotion(player.position, nextTile);
         }
     }
 
     private  static  void freePlayer(GamePlayer player, GraphicsPlayer graphicsPlayer){
-        graphicsPlayer.notifications.addLast(
+        graphicsPlayer.notifications.clear();
+        graphicsPlayer.notifications.add(
                 new Notification("Sorry, you are out! Best of luck next time!", -1));
         for(int i=0; i< player.myCities.size(); i++){
             player.myCities.get(i).sold = false;
@@ -266,7 +267,7 @@ public class GameBoard {
         return n+1;//to be in the range [1 - 6]
     }
 
-    private static void  initPlayers(int num_players){
+    private void  initPlayers(int num_players){
         players = new LinkedList<GamePlayer>();
         for (int i = 0; i < num_players; i++) {
             players.add(new GamePlayer(i));

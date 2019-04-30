@@ -4,13 +4,16 @@ import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.Screen;
 import com.badlogic.gdx.graphics.GL20;
 import com.badlogic.gdx.graphics.OrthographicCamera;
+import com.mygdx.game.Network.NetworkManager;
 
 public class MainMenuScreen implements Screen {
     final BankElHaz game;
     OrthographicCamera camera;
+    NetworkManager manager;
 
-    public MainMenuScreen(final BankElHaz game) {
+    public MainMenuScreen(final BankElHaz game, NetworkManager mgr) {
         this.game = game;
+        this.manager = mgr;
 
         camera = new OrthographicCamera();
         camera.setToOrtho(false, 512 * 12, 512 * 9);
@@ -30,7 +33,7 @@ public class MainMenuScreen implements Screen {
         game.batch.end();
 
         if (Gdx.input.isTouched()) {
-            game.setScreen(new MonopolyGameScreen(game));
+            game.setScreen(new MonopolyGameScreen(game, manager));
             dispose();
         }
     }

@@ -1,16 +1,17 @@
 package com.mygdx.game.GameLogic;
 
+import java.io.Serializable;
 import java.util.LinkedList;
 
-public class GamePlayer {
+public class GamePlayer implements Serializable {
     private static final int NUM_CATEGORIES = 10;
 
-    int id;
-    int position;
-    int account;
+    public int id;
+    public int position;
+    public int account;
 //    boolean out;
-    boolean fastBus;
-    boolean Prison;
+    public boolean fastBus;
+    public boolean Prison;
 
     LinkedList<City> myCities;
     int []citiesPerCategory;

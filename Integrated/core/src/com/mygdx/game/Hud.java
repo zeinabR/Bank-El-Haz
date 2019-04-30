@@ -67,7 +67,7 @@ public class Hud {
         board.notifyBuyDecision(result);
     }
 
-    public Hud(SpriteBatch sb, float width, float height, GameBoard board) {
+    public Hud(SpriteBatch sb, float width, float height, GameBoard board, int myID) {
         this.board = board;
         score = 200;
         viewport = new FitViewport(width, height, new OrthographicCamera());
@@ -80,7 +80,7 @@ public class Hud {
         BitmapFont jf_flat = new BitmapFont(Gdx.files.internal("fonts/jf_flat.fnt"));
         Label.LabelStyle labelStyle = new Label.LabelStyle(jf_flat, Color.WHITE);
         labelStyle.font.getData().setScale(1.0f);
-        playerNameLabel = new Label("Ahmad", labelStyle);
+        playerNameLabel = new Label(String.format("Player %1d", myID), labelStyle);
         playerScoreLabel = new Label(String.format("$ %05d", score), labelStyle);
         playerTimerLabel = new Label(String.format("%02d", (int)time), labelStyle);
         TextButton.TextButtonStyle tbStyle = new TextButton.TextButtonStyle();
@@ -122,14 +122,14 @@ public class Hud {
         stage.addActor(table);
     }
 
-    public void update(float delta, Queue<Notification> notifications) {
+    public void update(float delta, ArrayList<Notification> notifications) {
 //        if (time == 0) {
 //            notifications.addFirst(new Notification(20, "Moldova", 5));
 //        } else if (Math.abs(time - 6) <= 1) {
 //            notifications.addFirst(new Notification("You will go to jail!", 5));
 //        }
         while (! notifications.isEmpty()) {
-            Notification notification = notifications.removeFirst();
+            Notification notification = notifications.remove(0);
             if (notification.timeout == -1) {
                 notification.timeout = turnLength - time;
             }
@@ -143,7 +143,7 @@ public class Hud {
             buyDialogTime -= delta;
         else {
             buyDialog.hide(null);
-            notifyBuyDecision(false);
+//            notifyBuyDecision(false);
         }
         if (readOnlyDialogTime >= 0)
             readOnlyDialogTime -= delta;

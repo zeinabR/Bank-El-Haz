@@ -1,5 +1,7 @@
 package com.mygdx.game;
 
+import java.io.Serializable;
+
 public class Notification {
     public enum NotificationType {
         Buy,

@@ -4,7 +4,8 @@ import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.g2d.Sprite;
 import com.badlogic.gdx.math.Rectangle;
 import com.badlogic.gdx.math.Vector2;
-import com.badlogic.gdx.utils.Queue;
+
+import java.util.ArrayList;
 
 public class GraphicsPlayer {
     public int score;
@@ -19,9 +20,10 @@ public class GraphicsPlayer {
 
     public MotionState motionState = MotionState.idle;
     public int targetTile = 0;
+    public int nextTile = 0;
     public Vector2 initialPos;
 
-    public Queue<Notification> notifications;
+    public ArrayList<Notification> notifications;
 
     public GraphicsPlayer(Texture texture) {
         this(new Sprite(texture), 0);
@@ -35,7 +37,7 @@ public class GraphicsPlayer {
         this.score = score;
         this.playerSprite = sp;
         this.initialPos = new Vector2();
-        this.notifications = new Queue<Notification>();
+        this.notifications = new ArrayList<Notification>();
     }
 
     public Rectangle getCollider() {
@@ -51,9 +53,10 @@ public class GraphicsPlayer {
         playerSprite.translate(x, y);
     }
 
-    public void startAnimatedMotion(int targetTile) {
+    public void startAnimatedMotion(int targetTile, int nextTile) {
         this.targetTile = targetTile;
-        this.motionState = MotionState.should_move;
+        this.nextTile = nextTile;
+        this.motionState = MotionState.moving;
     }
 
     public void adjustRotation() {

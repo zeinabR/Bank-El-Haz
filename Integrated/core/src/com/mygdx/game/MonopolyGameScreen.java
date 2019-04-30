@@ -16,11 +16,19 @@ import com.badlogic.gdx.maps.tiled.TiledMapTileLayer;
 import com.badlogic.gdx.maps.tiled.TmxMapLoader;
 import com.badlogic.gdx.math.Rectangle;
 import com.badlogic.gdx.math.Vector2;
+import com.badlogic.gdx.utils.Queue;
 import com.mygdx.game.GameLogic.GameBoard;
 import com.mygdx.game.GameLogic.GamePlayer;
+import com.mygdx.game.Network.NetworkManager;
 
+import java.io.IOException;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
+import java.net.ServerSocket;
 import java.util.ArrayList;
+import java.util.LinkedList;
 import java.util.Random;
+import java.util.Scanner;
 
 import static com.badlogic.gdx.math.MathUtils.floor;
 import static java.lang.Math.abs;
@@ -35,7 +43,6 @@ public class MonopolyGameScreen implements Screen {
     final BankElHaz game;
     private Hud hud;
     private ArrayList<RectangleMapObject> collidableObjects;
-    private ArrayList<GraphicsPlayer> players;
     private int[][] tilePos;
     private GameBoard board;
     int numPlayers;
@@ -44,12 +51,17 @@ public class MonopolyGameScreen implements Screen {
     Texture[] dieTextures;
     int dieOutcome = 1;
 
-    public MonopolyGameScreen(final BankElHaz game) {
-        this(game, 1);
-    }
+    int myID;
+    ObjectOutputStream[] objectOutputStreams;
+    ObjectInputStream objectInputStream;
+    private ArrayList<GraphicsPlayer> players;
 
-    public MonopolyGameScreen(final BankElHaz game, int n_players) {
-        this.numPlayers = n_players;
+    final public NetworkManager manager;
+
+    public MonopolyGameScreen(final BankElHaz game, NetworkManager manager) {
+        this.manager = manager;
+        this.myID = manager.my_turn;
+        this.numPlayers = manager.num_connected.get() + 1;
         this.game = game;
         camera = new OrthographicCamera();
         camera.setToOrtho(false, 512 * 12, 512 * 9);
@@ -86,17 +98,23 @@ public class MonopolyGameScreen implements Screen {
                 "cars/car3.png",
                 "cars/car4.png"
         };
-        for (int i = 0; i < n_players; i++) {
+        for (int i = 0; i < numPlayers; i++) {
             GraphicsPlayer player = new GraphicsPlayer(new Texture(Gdx.files.internal(carTextures[i])));
             players.add(player);
             tiledMapRenderer.addSprite(player.playerSprite);
         }
-        board = new GameBoard(n_players);
-        hud = new Hud(game.batch, camera.viewportWidth, camera.viewportHeight, board);
+        board = new GameBoard(numPlayers);
+        hud = new Hud(game.batch, camera.viewportWidth, camera.viewportHeight, board, myID);
         dieSprite = new Sprite(dieTextures[0]);
-        dieSprite.setPosition(512 * 11 / 2 - 256, 512 * 8 / 2 - 256 );
+        dieSprite.setPosition(512 * 11 / 2 - 256, 512 * 8 / 2 - 256 * 5 );
         tiledMapRenderer.addSprite(dieSprite);
         initTilePos();
+        objectOutputStreams = new ObjectOutputStream[numPlayers];
+        for(int i = 0; i < numPlayers; i++) {
+            if (i == myID) continue;
+            objectOutputStreams[i] = manager.getObjectOutputStream(manager.players_ips[i], manager.players_ports[i]);
+        }
+        objectInputStream = manager.getObjectInputStream(10 * 1000);
     }
 
     private void addRectMapObjects(MapObjects objects, ArrayList<RectangleMapObject> rectangleMapObjects) {
@@ -206,12 +224,16 @@ public class MonopolyGameScreen implements Screen {
             else if (player.motionState == GraphicsPlayer.MotionState.moving) {
                 Vector2 targetTilePos = getPosFromTile(player.targetTile);
                 Rectangle playerCollider = player.getCollider();
-                if (abs(playerCollider.x - targetTilePos.x) <= 16 && abs(playerCollider.y - targetTilePos.y) <= 16) {
-                    player.motionState = GraphicsPlayer.MotionState.finished_moving;
-                    continue;
-                }
-                Vector2 nextTilePos = getPosFromTile((getTileFromPos(playerCollider.x, playerCollider.y) + 1) % 34);
+                player.playerSprite.setRotation(0);
+                Vector2 nextTilePos = getPosFromTile(player.nextTile);
+                System.out.println(String.format("%f, %f", playerCollider.x, playerCollider.y));
+                System.out.println(String.format("%f, %f", nextTilePos.x, nextTilePos.y));
                 player.playerSprite.setPosition(nextTilePos.x, nextTilePos.y);
+                player.adjustRotation();
+                if (abs(nextTilePos.x - targetTilePos.x) <= 16 && abs(nextTilePos.y - targetTilePos.y) <= 16) {
+                    player.motionState = GraphicsPlayer.MotionState.finished_moving;
+                }
+                player.nextTile += 1;
 //                if (nextTilePos.x > playerCollider.x)
 //                    player.playerSprite.translateX(16);
 //                else if (nextTilePos.x < playerCollider.x)
@@ -221,36 +243,95 @@ public class MonopolyGameScreen implements Screen {
 //                else if (nextTilePos.y < playerCollider.y)
 //                    player.playerSprite.translateY(-16);
 //                player.playerSprite.translate(targetTilePos.x - playerCollider.x, targetTilePos.y - playerCollider.y);
-//                player.adjustRotation();
-//                playerCollider = player.getCollider
+////                playerCollider = player.getCollider
 //                player.motionState = GraphicsPlayer.MotionState.finished_moving;
             }
         }
     }
 
     private void update(float delta) {
-        if (hud.time == 0) {
-            boolean skipTurn = true;
-            do {
-                currentPlayerTurn = (currentPlayerTurn + 1) % numPlayers;
+        currentPlayerTurn = (currentPlayerTurn + 1) % numPlayers;
+        hud.score = board.players.get(myID).account;
+        if (currentPlayerTurn == myID) {
+            if (hud.time == 0) {
                 dieOutcome = board.updateUserPosition(currentPlayerTurn, players.get(currentPlayerTurn));
-                skipTurn = (dieOutcome != 0);
-            } while (!skipTurn);
+            }
+            dieSprite.setTexture(dieTextures[dieOutcome - 1]);
+            updatePlayers(delta);
+            GraphicsPlayer currentPlayer = players.get(currentPlayerTurn);
+            int idx = 0;
+            // A hack, **for now**.
+            for (GraphicsPlayer graphicsPlayer : players) {
+                if (idx == myID) continue;
+                graphicsPlayer.notifications.clear();
+            }
+            if (currentPlayer.motionState == GraphicsPlayer.MotionState.finished_moving) {
+                /* Notify the GameBoard. */
+                board.processCurrentBlock(currentPlayerTurn, currentPlayer);
+            }
+            hud.update(delta, currentPlayer.notifications);
+            if (hud.time == 0) {
+                // Send updates to others
+                for (int i = 0; i < numPlayers; i++) {
+                    if (i != currentPlayerTurn) {
+//                        manager.send_Object(new Changes(currentPlayerTurn, board.players.get(currentPlayerTurn).position), manager.players_ips[i], manager.players_ports[i]);
+                        GamePlayer currentGamePlayer = board.players.get(currentPlayerTurn);
+                        String message = String.format("%1d %2d ***", currentPlayerTurn, currentGamePlayer.position);
+                        System.out.println("Starting to send: ");
+                        try {
+//                            objectOutputStreams[i].writeObject(message);
+                            objectOutputStreams[i].writeInt(currentPlayerTurn);
+                            objectOutputStreams[i].writeInt(currentGamePlayer.position);
+                            objectOutputStreams[i].flush();
+                        } catch (IOException e) {
+                            System.out.println(e.getMessage());
+                        }
+                        System.out.println("Sent Object...");
+                    }
+                }
+            }
+        } else {
+            hud.update(delta, new ArrayList<Notification>());
+            if (hud.time == 0) {
+//                if (!manager.my_Socket.isClosed()) {
+//                    try {
+//                        manager.my_Socket.close();
+//                        manager.my_Socket = new ServerSocket(manager.my_port);
+//                    } catch (IOException e) {
+//                        System.out.println(e.getMessage());
+//                        System.out.println("IO Exception occured on receiving updates!");
+//                    }
+//                }
+//                GamePlayer gp = (GamePlayer) manager.rcv_Object( 10 * 1000);
+//                Changes changes = (Changes) manager.rcv_Object(10 * 1000);
+//                System.out.println("Received: " + changes.newPos);
+//                board.players.set(gp.id, gp);
+                try {
+//                    String message = (String) objectInputStream.readObject();
+//                    System.out.println("RECV: " + message);
+//                    Scanner scanner = new Scanner(message);
+//                    int idToChange = scanner.nextInt();
+//                    int newPos = scanner.nextInt();
+                    System.out.println("Starting to receive: ");
+                    int idToChange = objectInputStream.readInt();
+                    int newPos = objectInputStream.readInt();
+                    System.out.println("Received objects");
+                    GamePlayer gamePlayer = board.players.get(idToChange);
+                    int nextTile = (gamePlayer.position + 1) % 34;
+                    gamePlayer.position = newPos;
+                    GraphicsPlayer player = players.get(idToChange);
+                    player.startAnimatedMotion(newPos, nextTile);
+                } catch (IOException e) {
+                    System.out.println(e.getMessage());
+                    System.out.println("IO Exception occured on receiving updates!"); }
+//                } catch (ClassNotFoundException e) {
+//                    System.out.println(e.getMessage());
+//                }
+
+                // Receive updates from others
+            }
         }
-        dieSprite.setTexture(dieTextures[dieOutcome - 1]);
-        updatePlayers(delta);
-        GraphicsPlayer currentPlayer = players.get(currentPlayerTurn);
-        int i = 0;
-        // A hack, **for now**.
-        for (GraphicsPlayer graphicsPlayer : players) {
-            if (i == currentPlayerTurn) continue;
-            graphicsPlayer.notifications.clear();
-        }
-        if (currentPlayer.motionState == GraphicsPlayer.MotionState.finished_moving) {
-            /* Notify the GameBoard. */
-            board.processCurrentBlock(currentPlayerTurn, currentPlayer);
-        }
-        hud.update(delta, currentPlayer.notifications);
+
     }
 
     @Override
