@@ -52,7 +52,20 @@ public class GraphicsPlayer {
     }
 
     public void startAnimatedMotion(int targetTile) {
-        this.targetTile =targetTile;
+        this.targetTile = targetTile;
         this.motionState = MotionState.should_move;
+    }
+
+    public void adjustRotation() {
+        Rectangle rect = this.playerSprite.getBoundingRectangle();
+        if (rect.x < 512) {
+            playerSprite.setRotation(0);
+        } else if (512 * 11 - rect.x < 512) {
+            playerSprite.setRotation(-180);
+        } else if (rect.y < 512) {
+            playerSprite.setRotation(-270);
+        } else {
+            playerSprite.setRotation(-90);
+        }
     }
 }

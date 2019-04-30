@@ -17,6 +17,7 @@ import com.badlogic.gdx.maps.tiled.TmxMapLoader;
 import com.badlogic.gdx.math.Rectangle;
 import com.badlogic.gdx.math.Vector2;
 import com.mygdx.game.GameLogic.GameBoard;
+import com.mygdx.game.GameLogic.GamePlayer;
 
 import java.util.ArrayList;
 import java.util.Random;
@@ -44,7 +45,7 @@ public class MonopolyGameScreen implements Screen {
     int dieOutcome = 1;
 
     public MonopolyGameScreen(final BankElHaz game) {
-        this(game, 4);
+        this(game, 1);
     }
 
     public MonopolyGameScreen(final BankElHaz game, int n_players) {
@@ -192,50 +193,37 @@ public class MonopolyGameScreen implements Screen {
     }
 
     private void updatePlayers(float delta) {
+//        GamePlayer gamePlayer = board.players.getFirst();
+        int i = 0;
         for (GraphicsPlayer player : players) {
+            GamePlayer gamePlayer = board.players.get(i);
             if (player.motionState == GraphicsPlayer.MotionState.finished_moving) {
-                Rectangle playerCollider = player.getCollider();
-                snap(playerCollider, player.playerSprite, round(playerCollider.x / 512) * 512, round(playerCollider.y  / 512) * 512, 16);
                 player.motionState = GraphicsPlayer.MotionState.idle;
             }
             if (player.motionState == GraphicsPlayer.MotionState.should_move) {
-                Rectangle playerCollider = player.getCollider();
-                player.initialPos.set(playerCollider.x, playerCollider.y);
                 player.motionState = GraphicsPlayer.MotionState.moving;
             }
             else if (player.motionState == GraphicsPlayer.MotionState.moving) {
                 Vector2 targetTilePos = getPosFromTile(player.targetTile);
                 Rectangle playerCollider = player.getCollider();
-//                System.out.println(
-//                        String.format("(%f, %f) -> (%f, %f)", playerCollider.x, playerCollider.y, targetTilePos.x, targetTilePos.y)
-//                );
-                if (abs(targetTilePos.x - playerCollider.x) < 32 && abs(targetTilePos.y - playerCollider.y) < 32) {
+                if (abs(playerCollider.x - targetTilePos.x) <= 16 && abs(playerCollider.y - targetTilePos.y) <= 16) {
                     player.motionState = GraphicsPlayer.MotionState.finished_moving;
-                } else {
-                    int currentTile = getTileFromPos(playerCollider.x, playerCollider.y);
-                    int nextTile = (currentTile + 1) % 34;
-                    Vector2 nextTilePos = getPosFromTile(nextTile);
-                    if (currentTile >= 0 && nextTile < 8) {
-                        player.playerSprite.setRotation(0);
-                        player.playerSprite.translateY(16);
-                    } else if (nextTile < 17) {
-                        player.playerSprite.setRotation(-90);
-                        player.playerSprite.translateX(16);
-                    } else if (nextTile == 17 && 512 * 11 - playerCollider.x > 32) {
-                        player.playerSprite.setRotation(-90);
-                        player.playerSprite.translateX(16);
-                    } else if (nextTile < 25) {
-                        player.playerSprite.setRotation(-180);
-                        player.playerSprite.translateY(-16);
-                    } else if (nextTile == 25 && playerCollider.y > 32) {
-                        player.playerSprite.setRotation(-180);
-                        player.playerSprite.translateY(-16);
-                    }
-                    else /* if (nextTile > 25) */ {
-                        player.playerSprite.setRotation(-270);
-                        player.playerSprite.translateX(-16);
-                    }
+                    continue;
                 }
+                Vector2 nextTilePos = getPosFromTile((getTileFromPos(playerCollider.x, playerCollider.y) + 1) % 34);
+                player.playerSprite.setPosition(nextTilePos.x, nextTilePos.y);
+//                if (nextTilePos.x > playerCollider.x)
+//                    player.playerSprite.translateX(16);
+//                else if (nextTilePos.x < playerCollider.x)
+//                    player.playerSprite.translateX(-16);
+//                if (nextTilePos.y > playerCollider.y)
+//                    player.playerSprite.translateY(16);
+//                else if (nextTilePos.y < playerCollider.y)
+//                    player.playerSprite.translateY(-16);
+//                player.playerSprite.translate(targetTilePos.x - playerCollider.x, targetTilePos.y - playerCollider.y);
+//                player.adjustRotation();
+//                playerCollider = player.getCollider
+//                player.motionState = GraphicsPlayer.MotionState.finished_moving;
             }
         }
     }

@@ -28,7 +28,7 @@ public class GameBoard {
     private static BoardBlock [] blocks;
     private static Card[] luckCards; 
     private static Card[] trialCards;
-    private static LinkedList<GamePlayer> players;
+    public static LinkedList<GamePlayer> players;
     private static int disc;
 
     private static int []citiesPerCategory;
@@ -55,16 +55,28 @@ public class GameBoard {
         }
         if (currentPlayer.fastBus){
             currentPlayer.position = (currentPlayer.position+disc*2) %NUM_BLOCKS;
-            graphicsPlayer.startAnimatedMotion(disc * 2);
-            currentPlayer.fastBus = true;
-            return disc;
+            graphicsPlayer.startAnimatedMotion(currentPlayer.position);
+            currentPlayer.fastBus = false;
         }
         else {
             currentPlayer.position = (currentPlayer.position + disc) %NUM_BLOCKS;
-            System.out.print("MOVE " + disc + " TILES ONLY!");
+//            System.out.print("MOVE " + disc + " TILES ONLY!");
             graphicsPlayer.startAnimatedMotion(currentPlayer.position);
-            return disc;
         }
+
+        BoardBlock currentBlock = blocks[currentPlayer.position];
+        switch (currentBlock.type) {
+            case 0:
+                break;
+            case 1:
+            case 2:
+                TrialHazak(currentPlayer, graphicsPlayer, currentBlock.type);
+                break;
+            default:
+                break;
+        }
+
+        return disc;
     }
 
     public void processCurrentBlock(int playerID, GraphicsPlayer graphicsPlayer) {
@@ -85,7 +97,7 @@ public class GameBoard {
                 break;
             case 1: // Luck Block
             case 2: // Trial Block
-                TrialHazak(currentPlayer, graphicsPlayer, currentBlock.type);
+//                TrialHazak(currentPlayer, graphicsPlayer, currentBlock.type);
                 break;
             case 3: // Start
                 System.out.println("At The Start again!");
@@ -227,12 +239,13 @@ public class GameBoard {
         }
         if (card.playerPos != 0) {
             if (card.playerPos < 0) {
-                player.position += card.playerPos;
-                graphicsPlayer.startAnimatedMotion(player.position);
+//                player.position += card.playerPos;
+                return;
             }
             else if (card.playerPos == prisonPosition)
                 player.Prison = true;
             player.position = card.playerPos;
+            graphicsPlayer.startAnimatedMotion(player.position);
         }
     }
 
@@ -308,8 +321,8 @@ public class GameBoard {
         blocks[23] = new City("Cairo",450,400,1200, 1600,55,320,1500,2400,6);
         blocks[24] = new BoardBlock(5, "Prison");
         blocks[25] = new City("Khartoum",200,170,370, 500,27,130,630,1850,7);
-        blocks[26] = new City("Luxor",200,210,550, 800,25,140,700,900,9);
-        blocks[27] = new City("Oman",250,200,550, 750,30,130,600,850,7);
+        blocks[26] = new City("Oman",250,210,550, 800,25,140,700,900,9);
+        blocks[27] = new City("Luxor",200,200,550, 750,30,130,600,850,7);
         blocks[28] = new City("Port Said",250,210,550, 800,30,140,700,900,7);
         blocks[29] = new BoardBlock(1, "Your Luck");
         blocks[30] = new City("Sana'a",250,170,370, 500,25,130,630,1850,8);
