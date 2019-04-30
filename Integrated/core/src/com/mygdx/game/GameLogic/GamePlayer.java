@@ -1,8 +1,8 @@
-package main.java;
+package com.mygdx.game.GameLogic;
 
 import java.util.LinkedList;
 
-public class Player {
+public class GamePlayer {
     private static final int NUM_CATEGORIES = 10;
 
     int id;
@@ -16,7 +16,7 @@ public class Player {
     int []citiesPerCategory;
     boolean [] Category;
 
-    Player(int id){
+    GamePlayer(int id){
         this.id = id;
         position = 0;
         account = 1200;

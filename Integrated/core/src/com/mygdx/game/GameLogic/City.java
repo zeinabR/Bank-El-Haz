@@ -1,4 +1,4 @@
-package main.java;
+package com.mygdx.game.GameLogic;
 
 public class City extends BoardBlock {
     int category; //for coloring and a game feature

@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<map version="1.2" tiledversion="1.2.3" orientation="orthogonal" renderorder="right-down" width="11" height="8" tilewidth="512" tileheight="512" infinite="0" nextlayerid="3" nextobjectid="1">
+ <tileset firstgid="1" source="Monopoly.tsx"/>
+ <layer id="2" name="Base" width="11" height="8">
+  <data encoding="base64" compression="zlib">
+   eJwzZWBgMB3FNMMArQQSOQ==
+  </data>
+ </layer>
+ <layer id="1" name="Tile Layer 1" width="11" height="8">
+  <data encoding="base64" compression="zlib">
+   eJyNzrcNgFAQBNGrAA8fDyJDeOi/Nya4Anall02wiZlVKBFQoEaOGBlSRPhM245LbE+8Yhv8m7IDj9huuMV2xYIZk38a/deAFj06NPgBmA4EBg==
+  </data>
+ </layer>
+</map>
